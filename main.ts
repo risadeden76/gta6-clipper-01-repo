@@ -30,6 +30,30 @@ if (
   console.error('VIDEO.json must be a JSON object with a string "url" field');
   process.exit(1);
 }
+const url = (parsed as { url: string }).url;
+if (url.length === 0) {
+  console.error('VIDEO.json "url" must not be empty');
+  process.exit(1);
+}
+
+// The gate only accepts a YouTube video address: a Short's /shorts/<id>, a
+// /watch?v=<id> or a youtu.be/<id> address, the id 11 letters, digits, _
+// and -. Catch a malformed address here, while the placeholder
+// ("https://www.youtube.com/shorts/<id>") is still waiting for the upload:
+// it warns and passes through, so the entry can be checked before the
+// video is published.
+const youtubePattern =
+  /^https:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:shorts\/|watch\?v=)|youtu\.be\/)[A-Za-z0-9_-]{11}(?:[?#].*)?$/;
+if (url.includes('<id>')) {
+  console.error(
+    'warning: VIDEO.json still holds the <id> placeholder — replace it with the published video address before submitting',
+  );
+} else if (!youtubePattern.test(url)) {
+  console.error(
+    'VIDEO.json "url" must be a YouTube video address (https://www.youtube.com/shorts/<id>, https://www.youtube.com/watch?v=<id> or https://youtu.be/<id>)',
+  );
+  process.exit(1);
+}
 
 mkdirSync(outputDir, { recursive: true });
 copyFileSync(source, target);
